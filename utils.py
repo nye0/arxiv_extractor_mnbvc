@@ -1,5 +1,46 @@
 import os
 import glob
+import re
+
+import re
+
+def remove_comments(tex_content):
+    # Regular expression pattern for LaTeX comments
+    comment_pattern = re.compile(r'(?<!\\)%.*?$', flags=re.MULTILINE)
+    return comment_pattern.sub('', tex_content).strip()
+    
+def begin_end_extractor(tex_content, what='figure'):
+    # figure/table/equation
+    pattern1 = re.compile(rf'\\begin\{{{what}\}}.*?\\end\{{{what}\}}', re.DOTALL)
+    pattern2 = re.compile(rf'\\begin\{{{what}\*}}.*?\\end\{{{what}\*}}', re.DOTALL)
+    extracted1 = pattern1.findall(tex_content)
+    extracted2 = pattern2.findall(tex_content)
+    return extracted1 + extracted2
+#todo: add caption/ 
+def extract_labels(tex_content):
+    # Regular expression pattern to find all \label{...} entries
+    label_pattern = re.compile(r'\\label\{(.*?)\}')
+    return label_pattern.findall(tex_content,re.DOTALL)
+
+
+def block_spliter(tex_content):
+   
+    # Split by major blocks while keeping the delimiter (i.e., the block)
+    block_pattern = re.compile(r'(\\begin\{(.*?)\}.*?\\end\{\2\})', re.DOTALL)
+    blocks = re.split(block_pattern, tex_content)
+
+    # Process each segment: if it's not a block, split it by empty lines
+    # todo: paragraph split more robust
+    processed_blocks = []
+    for block in blocks:
+        if block.strip() and not block_pattern.match(block):
+            subblocks = re.split(r'\n\s*\n', block)  # Split by empty lines
+            processed_blocks.extend([sub.strip() for sub in subblocks if sub.strip()])
+        elif block.strip():
+            processed_blocks.append(block.strip())
+            
+    return processed_blocks
+
 
 
 def list_tex_files(root_folder):
